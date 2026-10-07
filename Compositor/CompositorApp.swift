@@ -38,9 +38,9 @@ struct CompositorApp: App {
                         }
                             .configuredKeyboardShortcut("z", modifiers: [.command, .shift])
                     } else {
-                        Button(session.history.canUndo ? "Undo \(session.history.undoName)" : "Undo") { session.undo() }
+                        Button(session.history.canUndo ? String(localized: "Undo \(session.history.undoName)") : String(localized: "Undo")) { session.undo() }
                             .configuredKeyboardShortcut("z").disabled(!session.canUndo)
-                        Button(session.history.canRedo ? "Redo \(session.history.redoName)" : "Redo") { session.redo() }
+                        Button(session.history.canRedo ? String(localized: "Redo \(session.history.redoName)") : String(localized: "Redo")) { session.redo() }
                             .configuredKeyboardShortcut("z", modifiers: [.command, .shift]).disabled(!session.canRedo)
                     }
                 }
@@ -257,10 +257,10 @@ struct CompositorApp: App {
                     Button("Hue/Saturation…") { session.beginHueSaturation() }
                         .configuredKeyboardShortcut("u").disabled(!session.canAdjustColors)
                     ForEach([FilterKind.blackWhite, .colorBalance, .exposure, .gradientMap, .grain], id: \.self) { kind in
-                        Button("\(kind.rawValue)…") { session.beginFilter(kind) }
+                        Button("\(kind.rawValue.localized)…") { session.beginFilter(kind) }
                             .disabled(!session.canAdjustColors || session.hueSaturation != nil)
                     }
-                    Button(session.isMaskSelected ? "Invert Mask" : "Invert") { Task { await session.invertPixels() } }
+                    Button(session.isMaskSelected ? String(localized: "Invert Mask") : String(localized: "Invert")) { Task { await session.invertPixels() } }
                         .configuredKeyboardShortcut("i")
                         .disabled(!session.canInvert)
                     Divider()
@@ -282,26 +282,26 @@ struct CompositorApp: App {
                 }
                 CommandMenu("Filter") {
                     ForEach(FilterKind.allCases.filter { $0 != .contentAwareFill && !$0.isImageAdjustment }, id: \.self) { kind in
-                        Button("\(kind.rawValue)…") { session.beginFilter(kind) }
+                        Button("\(kind.rawValue.localized)…") { session.beginFilter(kind) }
                             .disabled(!(kind == .vignette ? session.canVignette : session.canAdjustColors) || session.hueSaturation != nil)
                     }
                 }
                 CommandMenu("Layer") {
                     Menu("New Adjustment Layer") {
                         ForEach(AdjustmentKind.allCases, id: \.self) { kind in
-                            Button(kind.rawValue + (kind.isEditable ? "…" : "")) { session.addAdjustment(kind) }
+                            Button(kind.rawValue.localized + (kind.isEditable ? "…" : "")) { session.addAdjustment(kind) }
                         }
                     }.disabled(!session.canEditLayers || session.document == nil)
                     Button("Edit Adjustment…") {
                         session.adjustmentEditingID = session.activeLayerID
                     }.disabled(!session.canEditLayers || session.activeLayer?.adjustment == nil)
                     Divider()
-                    Button(session.canTransformSelection ? "Transform Selection" : "Transform Layer") { session.transformCommand() }
+                    Button(session.canTransformSelection ? String(localized: "Transform Selection") : String(localized: "Transform Layer")) { session.transformCommand() }
                         .configuredKeyboardShortcut("t").disabled(!session.canTransform && !session.canTransformSelection)
-                    Button(session.selection == nil ? "Duplicate Layer" : "Layer via Copy") { session.layerViaCopy() }
+                    Button(session.selection == nil ? String(localized: "Duplicate Layer") : String(localized: "Layer via Copy")) { session.layerViaCopy() }
                         .configuredKeyboardShortcut("j").disabled(!session.canCopyPixels && !(session.selection == nil && session.canEditLayers && session.activeLayer != nil))
                     Divider()
-                    Button(session.activeLayer?.maskSourceID == nil ? "Create Clipping Mask" : "Release Clipping Mask") {
+                    Button(session.activeLayer?.maskSourceID == nil ? String(localized: "Create Clipping Mask") : String(localized: "Release Clipping Mask")) {
                         if let id = session.activeLayerID { session.toggleClippingMask(id) }
                     }
                     .configuredKeyboardShortcut("g", modifiers: [.command, .option])
@@ -317,7 +317,7 @@ struct CompositorApp: App {
                         .configuredKeyboardShortcut("n", modifiers: [.command, .shift]).disabled(!session.canEditLayers)
                     Button("Rename Layer…") { session.renamingLayerID = session.activeLayerID }
                         .disabled(!session.canEditLayers || session.activeLayer == nil)
-                    Button(session.activeLayer?.isVisible == false ? "Show Layer" : "Hide Layer") {
+                    Button(session.activeLayer?.isVisible == false ? String(localized: "Show Layer") : String(localized: "Hide Layer")) {
                         if let id = session.activeLayerID { session.toggleLayerVisibility(id) }
                     }.disabled(!session.canEditLayers || session.activeLayer == nil)
                     Divider()
@@ -335,7 +335,7 @@ struct CompositorApp: App {
                             .disabled(!session.canTransform)
                     }
                     Divider()
-                    Button(session.selectedEffect != nil ? "Delete " + session.selectedEffect!.kind.rawValue : session.isMaskSelected && session.activeLayer?.mask != nil ? "Delete Layer Mask" : session.selectedLayerIDs.count > 1 ? "Delete Layers" : "Delete Layer") {
+                    Button(session.selectedEffect != nil ? String(localized: "Delete \(session.selectedEffect!.kind.rawValue.localized)") : session.isMaskSelected && session.activeLayer?.mask != nil ? String(localized: "Delete Layer Mask") : session.selectedLayerIDs.count > 1 ? String(localized: "Delete Layers") : String(localized: "Delete Layer")) {
                         session.deleteLayerOrMask()
                     }
                         .disabled(!session.canEditLayers || session.activeLayer == nil)

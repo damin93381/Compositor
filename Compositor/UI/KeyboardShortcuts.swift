@@ -46,7 +46,7 @@ struct ShortcutChord: Codable, Equatable, Hashable {
                        "\u{f702}": "←", "\u{f703}": "→", "\u{f701}": "↓", "\u{f700}": "↑"]
         return (modifiers & 4 != 0 ? "⌃" : "") + (modifiers & 2 != 0 ? "⌥" : "")
             + (modifiers & 8 != 0 ? "⇧" : "") + (modifiers & 1 != 0 ? "⌘" : "")
-            + (special[key] ?? key.uppercased())
+            + (special[key]?.localized ?? key.uppercased())
     }
     func event(like event: NSEvent) -> NSEvent? {
         let codes: [String: UInt16] = ["\u{7f}": 51, "\r": 36, "\u{1b}": 53, "\t": 48, " ": 49,
@@ -66,6 +66,8 @@ struct ShortcutDefinition: Identifiable {
     let original: ShortcutChord
     var id: String { "\(group):\(title)" }
     var isMenu: Bool { group == "Menus" }
+    var localizedTitle: String { title.localized }
+    var localizedGroup: String { group.localized }
 
     static let all: [ShortcutDefinition] = {
         func entry(_ title: String, _ key: String, _ modifiers: Int = 0, menu: Bool = false) -> ShortcutDefinition {
@@ -154,7 +156,7 @@ final class ShortcutSettings {
         return chord(definition)
     }
     func show() {
-        panel.show(title: "Keyboard Shortcuts", content: KeyboardShortcutsSheet(settings: self))
+        panel.show(title: String(localized: "Keyboard Shortcuts"), content: KeyboardShortcutsSheet(settings: self))
     }
     func close() { panel.close() }
     func save(_ values: [String: ShortcutChord]) {
@@ -167,15 +169,15 @@ final class ShortcutSettings {
         var assigned: [ShortcutChord: String] = [:]
         for definition in ShortcutDefinition.all {
             let chord = values[definition.id] ?? definition.original
-            guard chord.key.count == 1, (0...15).contains(chord.modifiers) else { return "Choose a single key with optional modifiers." }
+            guard chord.key.count == 1, (0...15).contains(chord.modifiers) else { return String(localized: "Choose a single key with optional modifiers.") }
             if definition.group == "Text Editing", chord.modifiers & 7 == 0 {
-                return "Text-editing shortcuts need Command, Option, or Control so they do not replace normal typing."
+                return String(localized: "Text-editing shortcuts need Command, Option, or Control so they do not replace normal typing.")
             }
             if [ShortcutChord("q", 1), ShortcutChord(",", 1), ShortcutChord("m", 3)].contains(chord) {
-                return "\(chord.label) is reserved by macOS."
+                return String(localized: "\(chord.label) is reserved by macOS.")
             }
-            if let other = assigned[chord] { return "\(chord.label) is assigned to both \(other) and \(definition.title)." }
-            assigned[chord] = definition.title
+            if let other = assigned[chord] { return String(localized: "\(chord.label) is assigned to both \(other) and \(definition.localizedTitle).") }
+            assigned[chord] = definition.localizedTitle
         }
         return nil
     }
@@ -240,10 +242,10 @@ private struct KeyboardShortcutsSheet: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 6) {
                     ForEach(["Menus", "Canvas & Layers", "Text Editing"], id: \.self) { group in
-                        Text(group).font(.headline).padding(.top, 8)
-                        ForEach(ShortcutDefinition.all.filter { $0.group == group && (search.isEmpty || $0.title.localizedCaseInsensitiveContains(search)) }) { definition in
+                        Text(group.localized).font(.headline).padding(.top, 8)
+                        ForEach(ShortcutDefinition.all.filter { $0.group == group && (search.isEmpty || $0.localizedTitle.localizedCaseInsensitiveContains(search) || $0.title.localizedCaseInsensitiveContains(search)) }) { definition in
                             HStack {
-                                Text(definition.title)
+                                Text(definition.localizedTitle)
                                 Spacer()
                                 ShortcutRecorder(chord: draft[definition.id] ?? definition.original,
                                     recording: recording == definition.id,
@@ -289,8 +291,8 @@ private struct ShortcutRecorder: NSViewRepresentable {
     func makeNSView(context: Context) -> RecorderButton { RecorderButton() }
     func updateNSView(_ button: RecorderButton, context: Context) {
         button.start = start; button.finish = finish; button.recording = recording
-        button.title = recording ? "Press keys…" : chord.label
-        button.setAccessibilityLabel(recording ? "Press a shortcut" : chord.label)
+        button.title = recording ? String(localized: "Press keys…") : chord.label
+        button.setAccessibilityLabel(recording ? String(localized: "Press a shortcut") : chord.label)
         if recording, button.window?.firstResponder !== button { button.window?.makeFirstResponder(button) }
     }
     final class RecorderButton: NSButton {
